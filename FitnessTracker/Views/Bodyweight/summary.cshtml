@@ -4,21 +4,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
     <script src="~/js/Bodyweight/summary.js"></script>
 }
-
-@{
-    ViewData["Title"] = "Bodyweight";
-
-    string FormatWeight(double D)
+@functions
+{
+    string FormatWeight(double? weight)
     {
-        //Added this because D = 0 results in "-+0.00kg". Most likely a floating point precision issue.
-        if (D == -0)
-            D = 0;
+        if (!weight.HasValue)
+            return "0kg";
+        if (weight == 0)
+            weight = Math.Abs(weight.Value);
 
-        var x = $"{Math.Round(D, 2).ToString("+0.00;-0.00")}kg";
-        return x;
+        var formattedWeight = $"{Math.Round(weight.Value, 2):+0.00;-0.00}kg";
+        return formattedWeight;
     }
-
-
 }
 
 <div>
@@ -26,28 +23,12 @@
     <a asp-controller="Bodyweight" asp-action="EditRecords" class="font-weight-bold d-inline">+Add Bodyweights</a>
 </div>
 
-@if (Model.MostRecentRecord == null || Model.MostRecentRecord.Date != DateTime.Today)
-{
-    <div class="row">
-        <div class="col-3">
-            <div class="alert alert-info mt-3 mb-2">
-                <h5 class="ml-3">Add Today's Weight</h5>
 
-                <form asp-action="AddTodayWeight" method="post" class="ml-3 mr-3">
-                    <div class="input-group form-inline ">
-                        <input type="number" min="0" max="200" name="Weight" step="0.1" class="form-control mr-1" required />
-                        <input type="submit" value="Save" class="btn btn-primary" />
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-}
 
 
 <div class="row my-3">
     <div class="col">
-        <div class="card mheight-100">
+        <div class="card height-100">
             <div class="card-header py-3">
                 <h5 class="card-subtitle">Most Recent Bodyweight</h5>
             </div>
@@ -57,8 +38,7 @@
                         @(Model.MostRecentRecord == null ? "0" : Model.MostRecentRecord.Weight.ToString("F2"))kg
                     </h4>
                     <div class="card-text text-center">
-                        @if (Model.MostRecentRecord != null)
-                            @(Model.MostRecentRecord.Date.ToString("d"))
+                     
                     </div>
                 </div>
             </div>
@@ -161,7 +141,7 @@
                     <h4 class="card-title text-center" id="TargetWeight" data-target="@(Model.Target == null ? 0 : Model.Target.TargetWeight)">
                         @(Model.Target == null ? "0" : Model.Target.TargetWeight.ToString("F2"))kg
                     </h4>
-                    <div class="card-text text-center">@(Model.Target.TargetDate.ToString("d"))</div>
+                    <div class="card-text text-center">@(Model.Target == null ? "0" : Model.Target.TargetDate.ToString("d"))</div>
                 </div>
             </div>
         </div>

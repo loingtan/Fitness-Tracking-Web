@@ -1,23 +1,22 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FitnessTracker.Data;
+﻿using FitnessTracker.Data;
 using FitnessTracker.Models;
 using FitnessTracker.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace FitnessTracker.Controllers
 {
     [Authorize]
     public class BodyweightController : Controller
     {
-        private IBodyweightStorageService storageService;
-        private UserManager<FitnessUser> userManager;
+        private readonly IBodyweightStorageService storageService;
+        private readonly UserManager<FitnessUser> userManager;
 
         public BodyweightController(IBodyweightStorageService StorageService, UserManager<FitnessUser> UserManager)
         {
@@ -35,10 +34,15 @@ namespace FitnessTracker.Controllers
             FitnessUser currentUser = await GetUser();
 
             IEnumerable<BodyweightRecord> records = await storageService.GetBodyweightRecords(currentUser);
+
             BodyweightTarget target = await storageService.GetBodyweightTarget(currentUser);
-
-            BodyweightSummaryViewModel viewModel = new BodyweightSummaryViewModel(records, target);
-
+            ViewData["Title"] = "Bodyweight";
+            BodyweightSummaryViewModel viewModel = new(records, target);
+            Console.WriteLine(JsonSerializer.Serialize(viewModel));
+            if (viewModel == null)
+            {
+                return NotFound();
+            }
             return View(viewModel);
         }
 
@@ -107,7 +111,7 @@ namespace FitnessTracker.Controllers
             BodyweightRecord[] records = new BodyweightRecord[Dates.Length];
             for (int i = 0; i < Dates.Length; i++)
             {
-                BodyweightRecord newRecord = new BodyweightRecord()
+                BodyweightRecord newRecord = new()
                 {
                     User = currentUser,
                     Date = Dates[i],

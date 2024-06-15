@@ -2,66 +2,100 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace FitnessTracker.ViewModels
 {
     public class BodyweightSummaryViewModel
     {
-        public IEnumerable<BodyweightRecord> AllRecords { get; set; }
+        public IEnumerable<BodyweightRecord> AllRecords { get; private set; }
         public IEnumerable<BodyweightRecord> CurrentWeekRecords { get; private set; }
         public IEnumerable<BodyweightRecord> CurrentMonthRecords { get; private set; }
         public BodyweightRecord MostRecentRecord { get; private set; }
-
         public BodyweightTarget Target { get; private set; }
+        public double? CurrentWeekProgress { get; private set; }
+        public double? CurrentWeekAverage { get; private set; }
+        public double? CurrentMonthProgress { get; private set; }
+        public double? CurrentMonthAverage { get; private set; }
+        public double? AllTimeProgress { get; private set; }
+        public double? AllTimeAverage { get; private set; }
+        public double? DistanceToTarget { get; private set; }
+        public double? DailyProgressNeeded { get; private set; }
+        public double? WeeklyProgressNeeded { get; private set; }
 
-        public float CurrentWeekProgress { get; private set; } = 0;
-        public float CurrentWeekAverage { get; private set; } = 0;
-        public float CurrentMonthProgress { get; private set; } = 0;
-        public float CurrentMonthAverage { get; private set; } = 0;
-        public float AllTimeProgress { get; private set; } = 0;
-        public float AllTimeAverage { get; private set; } = 0;
-        public float DistanceToTarget { get; private set; } = 0;
-        public float DailyProgressNeeded { get; private set; } = 0;
-        public float WeeklyProgressNeeded { get; private set; } = 0;
-
-        public BodyweightSummaryViewModel(IEnumerable<BodyweightRecord> AllRecords,BodyweightTarget Target)
+        public BodyweightSummaryViewModel(IEnumerable<BodyweightRecord> allRecords, BodyweightTarget target)
         {
-            if (AllRecords == null || AllRecords.Count() == 0)
-                return;
+            // Initialize properties with default values if input data is null or empty
+            AllRecords = allRecords ?? Enumerable.Empty<BodyweightRecord>();
+            Target = target ?? new BodyweightTarget();
+            MostRecentRecord = allRecords?.FirstOrDefault();
 
-            this.AllRecords = AllRecords;
-            this.Target = Target;
-            this.MostRecentRecord = AllRecords.First();
-
-            CurrentMonthRecords = AllRecords.Where(record => record.Date >= DateTime.Today.AddDays(-28));
-            CurrentWeekRecords = CurrentMonthRecords.Where(record => record.Date >= DateTime.Today.AddDays(-7));
-
-            if (CurrentWeekRecords.Count() != 0)
+            if (allRecords != null && allRecords.Any())
             {
-                CurrentWeekProgress = CurrentWeekRecords.First().Weight - CurrentWeekRecords.Last().Weight;
+                CurrentMonthRecords = GetRecordsForPeriod(allRecords, 28);
+                CurrentWeekRecords = GetRecordsForPeriod(CurrentMonthRecords, 7);
+
+                CalculateProgressAndAverages();
+                CalculateTargetProgress();
+            }
+            else
+            {
+                // Set default values for progress and averages
+                CurrentWeekProgress = 0;
+                CurrentWeekAverage = 0;
+                CurrentMonthProgress = 0;
+                CurrentMonthAverage = 0;
+                AllTimeProgress = 0;
+                AllTimeAverage = 0;
+                DistanceToTarget = 0;
+                DailyProgressNeeded = 0;
+                WeeklyProgressNeeded = 0;
+            }
+        }
+
+        private IEnumerable<BodyweightRecord> GetRecordsForPeriod(IEnumerable<BodyweightRecord> records, int days)
+        {
+            return records.Where(record => record.Date >= DateTime.Today.AddDays(-days)).ToList();
+        }
+
+        private void CalculateProgressAndAverages()
+        {
+            if (CurrentWeekRecords != null && CurrentWeekRecords.Any())
+            {
+                var firstWeekWeight = CurrentWeekRecords.First().Weight;
+                var lastWeekWeight = CurrentWeekRecords.Last().Weight;
+                CurrentWeekProgress = firstWeekWeight - lastWeekWeight;
                 CurrentWeekAverage = CurrentWeekProgress / 7;
             }
 
-            if (CurrentMonthRecords.Count() != 0)
+            if (CurrentMonthRecords != null && CurrentMonthRecords.Any())
             {
-                CurrentMonthProgress = CurrentMonthRecords.First().Weight - CurrentMonthRecords.Last().Weight;
+                var firstMonthWeight = CurrentMonthRecords.First().Weight;
+                var lastMonthWeight = CurrentMonthRecords.Last().Weight;
+                CurrentMonthProgress = firstMonthWeight - lastMonthWeight;
                 CurrentMonthAverage = CurrentMonthProgress / 28;
             }
 
-            if (AllRecords.Count() != 0)
+            if (AllRecords != null && AllRecords.Any())
             {
-                AllTimeProgress = AllRecords.First().Weight - AllRecords.Last().Weight;
-                AllTimeAverage = AllTimeProgress / ((float)(AllRecords.First().Date - AllRecords.Last().Date).TotalDays) * 7;
+                var firstAllTimeWeight = AllRecords.First().Weight;
+                var lastAllTimeWeight = AllRecords.Last().Weight;
+                AllTimeProgress = firstAllTimeWeight - lastAllTimeWeight;
+                AllTimeAverage = AllTimeProgress / (float)(AllRecords.First().Date - AllRecords.Last().Date).TotalDays * 7;
             }
+        }
 
+        private void CalculateTargetProgress()
+        {
             if (Target == null)
                 return;
 
             DistanceToTarget = Target.TargetWeight - MostRecentRecord.Weight;
-            DailyProgressNeeded = (float)(DistanceToTarget / (Target.TargetDate - DateTime.Today).TotalDays);
-            WeeklyProgressNeeded = DailyProgressNeeded * 7;
+            var daysToTarget = (Target.TargetDate - DateTime.Today).TotalDays;
+            if (daysToTarget > 0)
+            {
+                DailyProgressNeeded = (float)(DistanceToTarget / daysToTarget);
+                WeeklyProgressNeeded = DailyProgressNeeded * 7;
+            }
         }
-
     }
 }
